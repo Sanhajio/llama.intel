@@ -132,7 +132,7 @@ class Attention(nn.Module):
                 self.n_local_kv_heads,
                 self.head_dim,
             )
-        ).cuda()
+        )
         self.cache_v = torch.zeros(
             (
                 args.max_batch_size,
@@ -140,7 +140,12 @@ class Attention(nn.Module):
                 self.n_local_kv_heads,
                 self.head_dim,
             )
-        ).cuda()
+        )
+        xpu_device = torch.distributed.get_rank() + 2
+        device = torch.device(f"xpu:{xpu_device}")
+        self.cache_k = self.cache_k.to(device)
+        self.cache_v = self.cache_v.to(device)
+
 
     def forward(
         self,
