@@ -69,7 +69,7 @@ class Llama:
             initialize_model_parallel(model_parallel_size)
 
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
-        xpu_device = local_rank + 2
+        xpu_device = torch.xpu.device_count() - torch.distributed.get_rank() - 1
         print(f"xpu device: {xpu_device}")
         torch.xpu.set_device(f"xpu:{xpu_device}")
 
@@ -128,7 +128,7 @@ class Llama:
         total_len = min(params.max_seq_len, max_gen_len + max_prompt_len)
 
         pad_id = self.tokenizer.pad_id
-        xpu_device = torch.distributed.get_rank() + 2
+        xpu_device = torch.xpu.device_count() - torch.distributed.get_rank() - 1
         device = torch.device(f"xpu:{xpu_device}")
         tokens = torch.full((bsz, total_len), pad_id, dtype=torch.long, device=device)
         for k, t in enumerate(prompt_tokens):

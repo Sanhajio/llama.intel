@@ -141,7 +141,7 @@ class Attention(nn.Module):
                 self.head_dim,
             )
         )
-        xpu_device = torch.distributed.get_rank() + 2
+        xpu_device = torch.xpu.device_count() - torch.distributed.get_rank() - 1
         device = torch.device(f"xpu:{xpu_device}")
         self.cache_k = self.cache_k.to(device)
         self.cache_v = self.cache_v.to(device)
