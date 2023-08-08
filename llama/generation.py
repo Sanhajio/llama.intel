@@ -69,7 +69,7 @@ class Llama:
             initialize_model_parallel(model_parallel_size)
 
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
-        xpu_device = torch.xpu.device_count() - torch.distributed.get_rank() - 1
+        xpu_device = (torch.xpu.device_count() - torch.distributed.get_rank() - 1) % torch.xpu.device_count()
         print(f"xpu device: {xpu_device}")
         torch.xpu.set_device(f"xpu:{xpu_device}")
 
@@ -100,6 +100,7 @@ class Llama:
         torch.set_default_tensor_type(torch.xpu.HalfTensor)
         model = Transformer(model_args)
         model.load_state_dict(checkpoint, strict=False)
+        model = ipex.optimize(model)
         print(f"Loaded in {time.time() - start_time:.2f} seconds")
 
         return Llama(model, tokenizer)
@@ -128,7 +129,7 @@ class Llama:
         total_len = min(params.max_seq_len, max_gen_len + max_prompt_len)
 
         pad_id = self.tokenizer.pad_id
-        xpu_device = torch.xpu.device_count() - torch.distributed.get_rank() - 1
+        xpu_device = (torch.xpu.device_count() - torch.distributed.get_rank() - 1) % torch.xpu.device_count()
         device = torch.device(f"xpu:{xpu_device}")
         tokens = torch.full((bsz, total_len), pad_id, dtype=torch.long, device=device)
         for k, t in enumerate(prompt_tokens):
